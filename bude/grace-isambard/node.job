@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH -p grace
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=144
+#SBATCH --time=01:00:00
+
+cd "$CFG_DIR" || exit 2
+
+date
+
+export OMP_NUM_THREADS=144 OMP_PROC_BIND=true
+
+srun $BENCHMARK_EXE --deck "$SRC_DIR/../data/bm1"

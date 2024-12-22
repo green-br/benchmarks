@@ -45,41 +45,82 @@ export CONFIG="${PLATFORM}_${COMPILER}"
 SCRIPT="`realpath $0`"
 SCRIPT_DIR="`realpath $(dirname $SCRIPT)`"
 
-export SRC_DIR="$PWD/miniBUDE/openmp"
-export CFG_DIR="$PWD/${PLATFORM}/${COMPILER}"
-export BENCHMARK_EXE="bude"
+if [ "${BUILDTOOL:-}" == "spack" ]; then
+  export BENCHMARK_EXE="omp-bude"
+  export CFG_DIR="$PWD/${PLATFORM}/${COMPILER}"
+else
+  export SRC_DIR="$PWD/miniBUDE/openmp"
+  export BENCHMARK_EXE="bude"
+fi
 
 # Set up the environment
 setup_env
 
 
-# Fetch source code
-if ! "$SCRIPT_DIR/fetch.sh"
-then
+if [ "${BUILDTOOL:-}" != "spack" ]; then
+  # Fetch source code
+  if ! "$SCRIPT_DIR/fetch.sh"
+  then
     echo
     echo "Failed to fetch source code."
     echo
     exit 1
+  fi
 fi
 
 # Handle actions
 if [ "$action" == "build" ]; then
-  rm -f "$SRC_DIR/$BENCHMARK_EXE" "$CFG_DIR/$BENCHMARK_EXE"
-  if ! eval make -C "$SRC_DIR" -B "$MAKE_OPTS" -j; then
-    echo
-    echo "Build failed."
-    echo
-    exit 1
-  fi
+  if [ "${BUILDTOOL:-}" == "spack" ]; then
+    cat > bude.yaml <<EOF
+spack:
+  include:
+    - $PWD/buildit/config/3/v0.23/linux/compilers.yaml
+    - $PWD/buildit/config/3/v0.23/packages.yaml
+  view: true
+  concretizer:
+    unify: true
+    reuse: false
+  specs:
+    - minibude%$SPACK_COMPILER model=omp
+EOF
+    spack env create -d ./bude bude.yaml
+    spack env activate ./bude
+    spack repo add ./buildit/repo/v0.23/isamrepo
+    spack concretize
+    spack install
+    spack env deactivate
+    mkdir -p "$CFG_DIR"
 
-  mkdir -p "$CFG_DIR"
-  mv "$SRC_DIR/$BENCHMARK_EXE" "$CFG_DIR"
+  else
+    rm -f "$SRC_DIR/$BENCHMARK_EXE" "$CFG_DIR/$BENCHMARK_EXE"
+    if ! eval make -C "$SRC_DIR" -B "$MAKE_OPTS" -j; then
+      echo
+      echo "Build failed."
+      echo
+      exit 1
+    fi
+
+    mkdir -p "$CFG_DIR"
+    mv "$SRC_DIR/$BENCHMARK_EXE" "$CFG_DIR"
+  fi
 elif [ "$action" == "run" ]; then
-  # Check binary exists
-  if [ ! -x "$CFG_DIR/$BENCHMARK_EXE" ]; then
-    echo "Executable '$CFG_DIR/$BENCHMARK_EXE' not found."
-    echo "Use the 'build' action first."
-    exit 1
+  if [ "${BUILDTOOL:-}" == "spack" ]; then
+    if ! spack env activate ./bude; then
+      echo "Spack env ./bude not found."
+      echo "Use the 'build' action first."
+      exit 1
+    fi
+    if ! type -P "$BENCHMARK_EXE"; then
+      echo "$BENCHMARK_EXE not found in Spack env ./bude"
+      exit 1
+    fi
+  else
+    # Check binary exists
+    if [ ! -x "$CFG_DIR/$BENCHMARK_EXE" ]; then
+      echo "Executable '$CFG_DIR/$BENCHMARK_EXE' not found."
+      echo "Use the 'build' action first."
+      exit 1
+    fi
   fi
 
   cd "$CFG_DIR"
@@ -101,12 +142,19 @@ elif [ "$action" == "run" ]; then
   # Submit job
   mkdir -p "$RUN_ARGS"
   cd "$RUN_ARGS"
+  if [ "${SCHEDULER:-}" == "slurm" ]; then
+    sbatch --nodes=$NODES \
+      --output=job.out \
+      --job-name="bude_${RUN_ARGS}_${CONFIG}" \
+      ${SLURM_RESOURCES:-} \
+      "$PLATFORM_DIR/${JOBSCRIPT}"
+  else
     qsub -l select=$NODES${PBS_RESOURCES:-} \
         -o job.out \
         -N "bude_${RUN_ARGS}_${CONFIG}" \
         -V \
         "$PLATFORM_DIR/$JOBSCRIPT"
-
+  fi
 
 else
   echo
