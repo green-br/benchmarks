@@ -47,7 +47,7 @@ SCRIPT_DIR="`realpath $(dirname $SCRIPT)`"
 
 if [ "${BUILDTOOL:-}" == "spack" ]; then
   export BENCHMARK_EXE="omp-bude"
-  export CFG_DIR="$PWD/${PLATFORM}/${COMPILER}"
+  export CFG_DIR="$PWD/${PLATFORM}/bude/${COMPILER}"
   export ENV_NAME="bude_$COMPILER"
 else
   export SRC_DIR="$PWD/miniBUDE/openmp"

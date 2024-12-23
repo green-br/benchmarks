@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH -p grace
+#SBATCH --time=00:15:00
+
+set -u
+
+cp "$SRC_DIR/doc/tests/clover_bm256.in" clover.in
+
+export OMP_WAIT_POLICY=active
+export OMP_NUM_THREADS=1
+srun -n $SLURM_NTASKS "$BENCHMARK_EXE"
