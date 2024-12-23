@@ -144,8 +144,8 @@ elif [ "$action" == "run" ]; then
   fi
 
   # Submit job
-  mkdir -p "results"
-  cd results
+  mkdir -p "results-${RUN_ARGS}"
+  cd results-${RUN_ARGS}
   if [ "${SCHEDULER:-}" == "slurm" ]; then
     sbatch --nodes=$NODES \
       --output=${RUN_ARGS}_${COMPILER}.out \
