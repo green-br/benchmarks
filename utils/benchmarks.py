@@ -1,5 +1,18 @@
 import os
 from collections import namedtuple
+from functools import reduce
+
+class bude:
+    name = 'bude'
+    fullname = 'minibude'
+    units = 'ms'
+    higher_better = False
+    def get_runtime(self, filename):
+        import yaml
+        with open(filename, 'r') as file:
+            line = get_last_line(file.readlines(), 'best:')
+            best = yaml.safe_load(line[6:])
+            return float(best["min_ms"])
 
 class stream:
     name = 'stream'
@@ -105,6 +118,10 @@ class openfoam:
     def get_runtime(self, filename):
         with open(filename, 'r') as file:
             lines           = file.readlines()
+            final_time      = float(get_last_line(lines, 'ExecutionTime').split()[2])
+            first_step_time = float(get_first_line(lines, 'ExecutionTime').split()[2])
+            final_time      = float(get_last_line(lines, 'ExecutionTime').split()[2])
+            first_step_time = float(get_first_line(lines, 'ExecutionTime').split()[2])
             final_time      = float(get_last_line(lines, 'ExecutionTime').split()[2])
             first_step_time = float(get_first_line(lines, 'ExecutionTime').split()[2])
             return final_time - first_step_time
@@ -219,6 +236,7 @@ miniapps.append(cloverleaf())
 miniapps.append(tealeaf())
 miniapps.append(snap())
 miniapps.append(neutral())
+miniapps.append(bude())
 
 applications = []
 applications.append(cp2k())
@@ -227,7 +245,5 @@ applications.append(namd())
 applications.append(nemo())
 applications.append(openfoam())
 applications.append(opensbli())
-applications.append(um())
-applications.append(vasp())
 
 benchmarks = miniapps + applications

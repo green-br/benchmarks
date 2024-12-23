@@ -1,11 +1,8 @@
 import sys
 from benchmarks import *
 
-print 'ERROR: script needs to be updated for new results format'
-exit(1)
-
 if len(sys.argv) != 2:
-    print 'Usage: python best-for-platform.py PLATFORM'
+    print('Usage: python best-for-platform.py PLATFORM')
     exit(1)
 
 platform = sys.argv[1]
@@ -21,11 +18,11 @@ for benchmark in benchmarks:
             continue
 
         output.append([benchmark.fullname, \
-                       '%.3g %s' % (best_result[1],benchmark.units),
-                       best_result[0]])
+                       '%.3g %s' % (best_result[2],benchmark.units),
+                       'jobsize=%s,config=%s' % (best_result[0],best_result[1])])
 
 # Print results in a column-aligned format.
 # Code shamelessly stolen from https://stackoverflow.com/a/12065663
 widths = [max(map(len, col)) for col in zip(*output)]
 for row in output:
-    print '  '.join((val.ljust(width) for val, width in zip(row, widths)))
+    print('  '.join((val.ljust(width) for val, width in zip(row, widths))))

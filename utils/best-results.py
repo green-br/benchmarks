@@ -2,11 +2,8 @@ import csv
 import sys
 from benchmarks import *
 
-print 'ERROR: script needs to be updated for new results format'
-exit(1)
-
 if len(sys.argv) != 1:
-    print 'Usage: python best-results.py'
+    print('Usage: python best-results.py')
     exit(1)
 
 platforms = ['tx2-foxconn', 'bdw-swan', 'skl-horizon', 'skl-swan']
@@ -20,5 +17,5 @@ for benchmark in benchmarks:
     entry['units'] = benchmark.units
     for platform in platforms:
         best = get_best(benchmark, results[benchmark.name][platform])
-        entry[platform] = ('%.3g' % best[1]) if best else 'X'
+        entry[platform] = ('%.3g' % best[2]) if best else 'X'
     output.writerow(entry)

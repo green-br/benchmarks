@@ -2,11 +2,8 @@ import csv
 import sys
 from benchmarks import *
 
-print 'ERROR: script needs to be updated for new results format'
-exit(1)
-
 if len(sys.argv) < 2 or len(sys.argv) > 3:
-    print 'Usage: python compiler-comparison.py PLATFORM [COMPILER_PREFIXES]'
+    print('Usage: python compiler-comparison.py PLATFORM [COMPILER_PREFIXES]')
     exit(1)
 
 platform = sys.argv[1]
@@ -27,14 +24,14 @@ for benchmark in benchmarks:
     for compiler in compilers:
         best = None
         for result in results[benchmark.name][platform]:
-            if result[0].startswith(compiler):
+            if result[1].startswith(compiler):
                 if best:
                     best = get_best(benchmark, [best, result])
                 else:
                     best = result
 
         if best:
-            entry[compiler] = ('%.3g' % best[1]) if best[1] else 'X'
+            entry[compiler] = ('%.3g' % best[2]) if best[2] else 'X'
         else:
             entry[compiler] = '-'
 

@@ -48,6 +48,7 @@ SCRIPT_DIR="`realpath $(dirname $SCRIPT)`"
 if [ "${BUILDTOOL:-}" == "spack" ]; then
   export BENCHMARK_EXE="omp-bude"
   export CFG_DIR="$PWD/${PLATFORM}/${COMPILER}"
+  export ENV_NAME="bude_$COMPILER"
 else
   export SRC_DIR="$PWD/miniBUDE/openmp"
   export BENCHMARK_EXE="bude"
@@ -83,8 +84,8 @@ spack:
   specs:
     - minibude%$SPACK_COMPILER model=omp
 EOF
-    spack env create -d ./bude bude.yaml
-    spack env activate ./bude
+    spack env create -d ./$ENV_NAME bude.yaml
+    spack env activate ./$ENV_NAME
     spack repo add ./buildit/repo/v0.23/isamrepo
     spack concretize
     spack install
@@ -105,15 +106,18 @@ EOF
   fi
 elif [ "$action" == "run" ]; then
   if [ "${BUILDTOOL:-}" == "spack" ]; then
-    if ! spack env activate ./bude; then
-      echo "Spack env ./bude not found."
+    if ! spack env activate ./$ENV_NAME; then
+      echo "Spack env ./$ENV_NAME not found."
       echo "Use the 'build' action first."
       exit 1
     fi
-    if ! type -P "$BENCHMARK_EXE"; then
-      echo "$BENCHMARK_EXE not found in Spack env ./bude"
+    if ! type -P "$BENCHMARK_EXE" 2>&1 >/dev/null; then
+      echo "$BENCHMARK_EXE not found in Spack env ./$ENV_NAME"
       exit 1
     fi
+    # This is really install location
+    FULL_EXE="`type -P $BENCHMARK_EXE`"
+    export SRC_DIR="`realpath $(dirname $FULL_EXE)/..`"
   else
     # Check binary exists
     if [ ! -x "$CFG_DIR/$BENCHMARK_EXE" ]; then
@@ -124,7 +128,7 @@ elif [ "$action" == "run" ]; then
   fi
 
   cd "$CFG_DIR"
-  if [ "$RUN_ARGS" == node ]
+  if [ "$RUN_ARGS" == "node" ]
   then
       NODES=1
       JOBSCRIPT=node.job
@@ -140,17 +144,17 @@ elif [ "$action" == "run" ]; then
   fi
 
   # Submit job
-  mkdir -p "$RUN_ARGS"
-  cd "$RUN_ARGS"
+  mkdir -p "results"
+  cd results
   if [ "${SCHEDULER:-}" == "slurm" ]; then
     sbatch --nodes=$NODES \
-      --output=job.out \
+      --output=${RUN_ARGS}_${COMPILER}.out \
       --job-name="bude_${RUN_ARGS}_${CONFIG}" \
       ${SLURM_RESOURCES:-} \
       "$PLATFORM_DIR/${JOBSCRIPT}"
   else
     qsub -l select=$NODES${PBS_RESOURCES:-} \
-        -o job.out \
+        -o ${RUN_ARGS}_${COMPILER}.out \
         -N "bude_${RUN_ARGS}_${CONFIG}" \
         -V \
         "$PLATFORM_DIR/$JOBSCRIPT"

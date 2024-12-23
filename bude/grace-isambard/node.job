@@ -11,4 +11,4 @@ date
 
 export OMP_NUM_THREADS=144 OMP_PROC_BIND=true
 
-srun $BENCHMARK_EXE --deck "$SRC_DIR/../data/bm1"
+srun $BENCHMARK_EXE --deck "$SRC_DIR/doc/tests/bm1" --wgsize 1 --ppwi all
